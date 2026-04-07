@@ -13,8 +13,6 @@ from datetime import datetime, timezone
 from typing import Optional
 
 import anthropic
-from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -25,7 +23,8 @@ ANTHROPIC_MODEL  = "claude-3-5-sonnet-20241022"
 BATCH_SIZE       = 20   # anomalies per LLM call
 
 
-def build_spark() -> SparkSession:
+def build_spark():
+    from pyspark.sql import SparkSession
     return (
         SparkSession.builder
         .appName("LLMAnomalyDetector")
@@ -37,11 +36,12 @@ def build_spark() -> SparkSession:
     )
 
 
-def load_recent_anomalies(spark: SparkSession, run_date: str):
+def load_recent_anomalies(spark, run_date: str):
+    from pyspark.sql import functions as F
     return (
         spark.read.format("delta").load(DELTA_ANOMALIES)
         .filter(F.col("date_part") == run_date)
-        .filter(F.col("llm_analyzed").isNull())   # not yet analyzed
+        .filter(F.col("llm_analyzed").isNull())
         .orderBy(F.col("anomaly_score").desc())
         .limit(200)
     )
@@ -122,6 +122,7 @@ def analyze_anomalies(run_date: str) -> dict:
 
     # Save reports back to Delta
     if all_results:
+        from pyspark.sql import Row  # noqa: F401
         reports_df = spark.createDataFrame([
             {
                 "run_date":         run_date,

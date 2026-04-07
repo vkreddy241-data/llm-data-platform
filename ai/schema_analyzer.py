@@ -12,8 +12,6 @@ from datetime import datetime, timezone
 from typing import Optional
 
 import anthropic
-from pyspark.sql import SparkSession
-from delta.tables import DeltaTable
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +19,8 @@ ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
 DELTA_CLEAN     = os.getenv("DELTA_CLEAN", "s3a://vkreddy-llm-platform/delta/transactions_clean")
 
 
-def build_spark() -> SparkSession:
+def build_spark():
+    from pyspark.sql import SparkSession
     return (
         SparkSession.builder
         .appName("LLMSchemaAnalyzer")
@@ -33,8 +32,9 @@ def build_spark() -> SparkSession:
     )
 
 
-def get_schema_history(spark: SparkSession, delta_path: str) -> list[dict]:
+def get_schema_history(spark, delta_path: str) -> list[dict]:
     """Get schema from last 7 Delta versions."""
+    from delta.tables import DeltaTable
     dt = DeltaTable.forPath(spark, delta_path)
     history = dt.history(7).select("version", "timestamp", "operationMetrics").collect()
     schemas = []

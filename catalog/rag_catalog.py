@@ -16,8 +16,6 @@ import os
 from typing import Optional
 
 import anthropic
-import chromadb
-from chromadb.utils import embedding_functions
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +29,12 @@ TOP_K            = 5   # number of tables to retrieve per query
 class RAGDataCatalog:
 
     def __init__(self):
-        self.client  = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        import chromadb
+        from chromadb.utils import embedding_functions
+        self.client  = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
         self.chroma  = chromadb.PersistentClient(path=CHROMA_PATH)
         self.ef = embedding_functions.OpenAIEmbeddingFunction(
-            api_key=os.environ["OPENAI_API_KEY"],
+            api_key=os.environ.get("OPENAI_API_KEY", ""),
             model_name=EMBEDDING_MODEL,
         )
         self.collection = self.chroma.get_or_create_collection(
@@ -56,7 +56,8 @@ class RAGDataCatalog:
             })
         return tables
 
-    def build_rag_prompt(self, query: str, context_tables: list[dict]) -> str:
+    @staticmethod
+    def build_rag_prompt(query: str, context_tables: list[dict]) -> str:
         context = "\n\n".join([
             f"TABLE: {t['metadata']['table_name']}\n{t['document']}"
             for t in context_tables
@@ -87,7 +88,7 @@ Include the Delta Lake path when recommending a specific table."""
             }
 
         # Step 2: Generate answer with LLM
-        prompt = self.build_rag_prompt(question, context_tables)
+        prompt = RAGDataCatalog.build_rag_prompt(question, context_tables)
         response = self.client.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=800,

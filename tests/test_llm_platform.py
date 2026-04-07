@@ -116,14 +116,13 @@ class TestEnrichmentPrompt:
 class TestRAGCatalog:
     def test_rag_prompt_includes_question(self):
         from catalog.rag_catalog import RAGDataCatalog
-        catalog = RAGDataCatalog.__new__(RAGDataCatalog)
         context_tables = [
             {
                 "document": "TABLE: transactions_clean\nContains clean transaction data.",
                 "metadata": {"table_name": "transactions_clean", "delta_path": "s3a://test/clean"},
             }
         ]
-        prompt = catalog.build_rag_prompt("Which table has amounts?", context_tables)
+        prompt = RAGDataCatalog.build_rag_prompt("Which table has amounts?", context_tables)
         assert "Which table has amounts?" in prompt
         assert "transactions_clean" in prompt
 
